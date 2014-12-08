@@ -6,6 +6,8 @@
 #include "HumanResouce.h"
 #include "HumanResouceDlg.h"
 #include "afxdialogex.h"
+#include "ADOConnection.h"
+#include "StaffDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -49,6 +51,7 @@ END_MESSAGE_MAP()
 
 CHumanResouceDlg::CHumanResouceDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CHumanResouceDlg::IDD, pParent)
+	, m_BusinessEntityID(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -56,12 +59,14 @@ CHumanResouceDlg::CHumanResouceDlg(CWnd* pParent /*=NULL*/)
 void CHumanResouceDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_EDIT_USER, m_BusinessEntityID);
 }
 
 BEGIN_MESSAGE_MAP(CHumanResouceDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDOK, &CHumanResouceDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -96,7 +101,7 @@ BOOL CHumanResouceDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	ShowWindow(SW_MAXIMIZE);
+	//ShowWindow(SW_MAXIMIZE);
 
 	// TODO: 在此添加额外的初始化代码
 
@@ -152,3 +157,50 @@ HCURSOR CHumanResouceDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+
+void CHumanResouceDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(true);
+	if(m_BusinessEntityID == _T(""))
+	{
+		MessageBox(_T("请输入您的BusinessEntityID！"));
+		return;
+	}
+
+	CADOConnection m_adoConnection;
+	m_adoConnection.OnInitAdo();
+	_RecordsetPtr m_pRecordset;
+	
+	int employeeID = -1;
+
+	_bstr_t empSQL="Select * from [AdventureWorks2008].[HumanResources].[EmployeeDepartmentHistory] where [DepartmentID]='9'";
+	m_pRecordset=m_adoConnection.GetRecordset(empSQL);
+
+	while (!m_pRecordset->adoEOF)
+	{
+		_variant_t temp = (m_pRecordset->GetCollect("BusinessEntityID"));
+		if ( temp.vt != VT_NULL)
+		{
+			if (temp ==  /*_ttoi*/(m_BusinessEntityID))
+			{
+				StaffDlg dlg;
+				dlg.DoModal();
+				this->DestroyWindow();				
+				return;
+			}
+		}
+		m_pRecordset->MoveNext();
+	}
+	
+	if (-1 == employeeID)
+	{
+		GetDlgItem(IDC_EDIT_USER)->SetWindowText(_T(""));
+		MessageBox(_T("非人力资源，没有权限"));
+		return;
+	}
+
+	m_adoConnection.ExitConnect();
+	CDialogEx::OnOK();
+}

@@ -26,4 +26,10 @@ public:
 	CListCtrl m_List;
 
 	afx_msg void OnBnClickedButton1();
+	afx_msg void OnNMClickList1(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButton2();
+	afx_msg void OnBnClickedButton3();
+private:
+	int ruleCheck(int mode);
+	void listUpdate();
 };
